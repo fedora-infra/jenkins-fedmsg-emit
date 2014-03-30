@@ -11,11 +11,17 @@
   <version>1.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
-  <!-- get every artifact through repo.jenkins-ci.org, which proxies all the artifacts that we need -->
   <repositories>
     <repository>
       <id>repo.jenkins-ci.org</id>
       <url>http://repo.jenkins-ci.org/public/</url>
+    </repository>
+  </repositories>
+
+  <repositories>
+    <repository>
+      <id>codeblock.fedorapeople.org</id>
+      <url>http://codeblock.fedorapeople.org/maven/</url>
     </repository>
   </repositories>
 
@@ -26,4 +32,13 @@
     </pluginRepository>
   </pluginRepositories>
 
+  <dependencies>
+    <dependency>
+      <groupId>org.fedoraproject</groupId>
+      <artifactId>fedmsg</artifactId>
+      <version>1.0.0</version>
+      <type>jar</type>
+      <optional>false</optional>
+    </dependency>
+  </dependencies>
 </project>

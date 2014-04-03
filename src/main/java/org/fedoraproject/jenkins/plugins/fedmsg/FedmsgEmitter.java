@@ -38,8 +38,8 @@ public class FedmsgEmitter extends Notifier {
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
         String endpoint = getDescriptor().getUseStaging() ?
-            "tcp://hub.fedoraproject.org:9940"
-            : "tcp://hub.stg.fedoraproject.org:9940";
+            "tcp://hub.stg.fedoraproject.org:9940"
+            : "tcp://hub.fedoraproject.org:9940";
 
         String environment = getDescriptor().getUseStaging() ? "stg" : "prod";
 

@@ -17,6 +17,8 @@ import org.kohsuke.stapler.StaplerRequest;
 import java.io.IOException;
 import java.io.File;
 import java.util.HashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.fedoraproject.fedmsg.*;
 
@@ -32,20 +34,24 @@ import java.security.SignatureException;
  */
 public class FedmsgEmitter extends Notifier {
 
+
+  private static final Logger LOGGER = Logger.getLogger("FedmsgEmitter");
+
     @DataBoundConstructor
     public FedmsgEmitter() { }
 
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
-        String endpoint = getDescriptor().getUseStaging() ?
-            "tcp://hub.stg.fedoraproject.org:9940"
-            : "tcp://hub.fedoraproject.org:9940";
+        String endpoint = getDescriptor().getEndpoint();
+        String environment = getDescriptor().getEnvironmentShortname();
 
-        String environment = getDescriptor().getUseStaging() ? "stg" : "prod";
+        LOGGER.log(Level.SEVERE, "Endpoint: " + endpoint);
+        LOGGER.log(Level.SEVERE, "Env: " + environment);
 
         FedmsgConnection fedmsg = new FedmsgConnection()
             .setEndpoint(endpoint)
-            .setLinger(2000);
+            .setLinger(2000)
+            .connect();
 
         Result buildResult = build.getResult();
         if (buildResult != null) {
@@ -53,18 +59,38 @@ public class FedmsgEmitter extends Notifier {
             message.put("project", build.getProject().getName());
             message.put("build", build.getNumber());
 
+            String status = "";
+            if (buildResult.toString().equals("SUCCESS")) {
+                status = "passed";
+            } else if (buildResult.toString().equals("FAILURE")) {
+                status = "failed";
+            } else {
+                status = "unknown";
+            }
+
             FedmsgMessage blob = new FedmsgMessage()
-                .setTopic("org.fedoraproject." + environment + ".jenkins.build." + buildResult.toString())
+                .setTopic("org.fedoraproject." + environment + ".jenkins.build." + status)
                 .setI(1)
                 .setTimestamp(new java.util.Date())
                 .setMessage(message);
 
             try {
-                SignedFedmsgMessage signed = blob.sign(
-                    new File("/etc/pki/fedmsg/jenkins-jenkins.cloud.fedoraproject.org.crt"),
-                    new File("/etc/pki/fedmsg/jenkins-jenkins.cloud.fedoraproject.org.key"));
-                fedmsg.send(signed);
+                LOGGER.log(Level.SEVERE, "MSG: " + blob.toJson().toString());
             } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Error converting (unsigned) message to JSON.");
+            }
+
+            try {
+                if (getDescriptor().getShouldSign()) {
+                    SignedFedmsgMessage signed = blob.sign(
+                        new File("/etc/pki/fedmsg/jenkins-jenkins.cloud.fedoraproject.org.crt"),
+                        new File("/etc/pki/fedmsg/jenkins-jenkins.cloud.fedoraproject.org.key"));
+                    fedmsg.send(signed);
+                } else {
+                    fedmsg.send(blob);
+                }
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Unable to send to fedmsg.", e);
                 return false;
             }
         }
@@ -90,7 +116,9 @@ public class FedmsgEmitter extends Notifier {
          * <p>
          * If you don't want fields to be persisted, use <tt>transient</tt>.
          */
-        private boolean useStaging;
+        private boolean shouldSign;
+        private String  endpoint;
+        private String  environmentShortname;
 
         /**
          * In order to load the persisted global configuration, you have to
@@ -113,16 +141,32 @@ public class FedmsgEmitter extends Notifier {
 
         @Override
         public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
-            useStaging = formData.getBoolean("useStaging");
+            shouldSign = formData.getBoolean("shouldSign");
+            endpoint   = formData.getString("endpoint");
+            environmentShortname = formData.getString("environmentShortname");
             save();
             return super.configure(req, formData);
         }
 
         /**
-         * This method returns true if the global configuration says we should use staging.
+         * This method returns true if the global configuration says we should sign messages.
          */
-        public boolean getUseStaging() {
-            return useStaging;
+        public boolean getShouldSign() {
+            return shouldSign;
+        }
+
+        /**
+         * This method returns the endpoint we should connect to.
+         */
+        public String getEndpoint() {
+            return endpoint;
+        }
+
+        /**
+         * This method returns the shortname for the fedmsg environment (e.g. "prod", "dev", "stg")
+         */
+        public String getEnvironmentShortname() {
+            return environmentShortname;
         }
     }
 }

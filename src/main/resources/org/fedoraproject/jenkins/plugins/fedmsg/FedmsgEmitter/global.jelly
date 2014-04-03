@@ -12,9 +12,18 @@
     so it should be straightforward to find them.
   -->
   <f:section title="Fedmsg Emitter">
-    <f:entry title="Staging" field="useStaging"
-      description="Check if we should send messages to Staging instead of Production">
+    <f:entry title="Signing" field="shouldSign"
+      description="Check if we should sign messages before sending them">
       <f:checkbox />
+    </f:entry>
+
+    <f:entry title="Fedmsg Endpoint" field="endpoint" description="The endpoint to connect to">
+	    <f:textbox value="${descriptor.endpoint}" />
+    </f:entry>
+
+    <f:entry title="Environment Shortname" field="environmentShortname"
+      description="Check if we should sign messages before sending them">
+	    <f:textbox value="${descriptor.environmentShortname}" />
     </f:entry>
   </f:section>
 </j:jelly>

@@ -1,7 +1,6 @@
 package org.fedoraproject.jenkins.plugins.fedmsg;
 import hudson.Launcher;
 import hudson.Extension;
-import hudson.util.FormValidation;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.AbstractProject;
@@ -14,7 +13,6 @@ import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
-import java.io.IOException;
 import java.io.File;
 import java.util.HashMap;
 import java.util.logging.Level;
@@ -22,10 +20,6 @@ import java.util.logging.Logger;
 
 import org.fedoraproject.fedmsg.*;
 
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.SignatureException;
 
 /**
  * Send a message to the Fedmsg bus when a build is completed.
@@ -44,10 +38,14 @@ public class FedmsgEmitter extends Notifier {
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
         String endpoint = getDescriptor().getEndpoint();
         String environment = getDescriptor().getEnvironmentShortname();
-
+        String cert = getDescriptor().getCertificateFile();
+        String key  = getDescriptor().getKeystoreFile();
+        
         LOGGER.log(Level.SEVERE, "Endpoint: " + endpoint);
         LOGGER.log(Level.SEVERE, "Env: " + environment);
-
+        LOGGER.log(Level.SEVERE, "Certificate: " + cert);
+        LOGGER.log(Level.SEVERE, "Keystore: " + key);
+        
         FedmsgConnection fedmsg = new FedmsgConnection()
             .setEndpoint(endpoint)
             .setLinger(2000)
@@ -83,8 +81,8 @@ public class FedmsgEmitter extends Notifier {
             try {
                 if (getDescriptor().getShouldSign()) {
                     SignedFedmsgMessage signed = blob.sign(
-                        new File("/etc/pki/fedmsg/jenkins-jenkins.cloud.fedoraproject.org.crt"),
-                        new File("/etc/pki/fedmsg/jenkins-jenkins.cloud.fedoraproject.org.key"));
+                        new File(cert),
+                        new File(key));
                     fedmsg.send(signed);
                 } else {
                     fedmsg.send(blob);
@@ -119,7 +117,8 @@ public class FedmsgEmitter extends Notifier {
         private boolean shouldSign;
         private String  endpoint;
         private String  environmentShortname;
-
+        private String  certificateFile;
+        private String  keystoreFile;
         /**
          * In order to load the persisted global configuration, you have to
          * call load() in the constructor.
@@ -144,6 +143,8 @@ public class FedmsgEmitter extends Notifier {
             shouldSign = formData.getBoolean("shouldSign");
             endpoint   = formData.getString("endpoint");
             environmentShortname = formData.getString("environmentShortname");
+            keystoreFile = formData.getString("keystoreFile") ;
+            certificateFile = formData.getString("certificateFile");
             save();
             return super.configure(req, formData);
         }
@@ -167,6 +168,34 @@ public class FedmsgEmitter extends Notifier {
          */
         public String getEnvironmentShortname() {
             return environmentShortname;
+        }
+
+        /**
+         * @return the certificateFile
+         */
+        public String getCertificateFile() {
+            return certificateFile;
+        }
+
+        /**
+         * @param certificateFile the certificateFile to set
+         */
+        public void setCertificateFile(String certificateFile) {
+            this.certificateFile = certificateFile;
+        }
+
+        /**
+         * @return the keystoreFile
+         */
+        public String getKeystoreFile() {
+            return keystoreFile;
+        }
+
+        /**
+         * @param keystoreFile the keystoreFile to set
+         */
+        public void setKeystoreFile(String keystoreFile) {
+            this.keystoreFile = keystoreFile;
         }
     }
 }

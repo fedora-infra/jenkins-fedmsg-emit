@@ -25,5 +25,15 @@
       description="Check if we should sign messages before sending them">
 	    <f:textbox value="${descriptor.environmentShortname}" />
     </f:entry>
+    
+    <f:entry title="Certificate File" field="certificateFile"
+      description="Certificate used Fedmsg Emitter">
+	    <f:textbox value="${descriptor.certificateFile}" />
+    </f:entry>
+
+    <f:entry title="Keystore File" field="keystoreFile"
+      description="Keystore used Fedmsg Emitter">
+	    <f:textbox value="${descriptor.keystoreFile}" />
+    </f:entry>
   </f:section>
 </j:jelly>

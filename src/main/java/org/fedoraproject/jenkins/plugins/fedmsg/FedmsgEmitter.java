@@ -20,6 +20,10 @@ import java.util.logging.Logger;
 
 import org.fedoraproject.fedmsg.*;
 
+import fj.*;
+import fj.data.Either;
+import fj.data.Option;
+
 
 /**
  * Send a message to the Fedmsg bus when a build is completed.
@@ -35,64 +39,71 @@ public class FedmsgEmitter extends Notifier {
     public FedmsgEmitter() { }
 
     @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
-        String endpoint    = getDescriptor().getEndpoint();
-        String environment = getDescriptor().getEnvironmentShortname();
-        String cert        = getDescriptor().getCertificateFile();
-        String key         = getDescriptor().getKeystoreFile();
+    public boolean perform(final AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
+        final String endpoint    = getDescriptor().getEndpoint();
+        final String environment = getDescriptor().getEnvironmentShortname();
+        final String cert        = getDescriptor().getCertificateFile();
+        final String key         = getDescriptor().getKeystoreFile();
 
         LOGGER.log(Level.SEVERE, "Endpoint: " + endpoint);
         LOGGER.log(Level.SEVERE, "Env: " + environment);
         LOGGER.log(Level.SEVERE, "Certificate: " + cert);
         LOGGER.log(Level.SEVERE, "Keystore: " + key);
 
-        FedmsgConnection fedmsg = new FedmsgConnection()
+        final FedmsgConnection fedmsg = new FedmsgConnection()
             .setEndpoint(endpoint)
             .setLinger(2000)
             .connect();
 
-        Result buildResult = build.getResult();
-        if (buildResult != null) {
-            HashMap<String, Object> message = new HashMap();
-            message.put("project", build.getProject().getName());
-            message.put("build", build.getNumber());
+        Either<Exception, Result> buildResult = Option.fromNull(build.getResult()).toEither(new Exception("left"));
 
-            String status = "";
-            if (buildResult.toString().equals("SUCCESS")) {
-                status = "passed";
-            } else if (buildResult.toString().equals("FAILURE")) {
-                status = "failed";
-            } else {
-                status = "unknown";
-            }
+        // /!\ ooooooh scary! monadic bind! /!\  :-)
+        Either<Exception, Result> res = buildResult.right().bind(new F<Result, Either<Exception, Result>>() {
+            public Either<Exception, Result> f(final Result r) {
+                HashMap<String, Object> message = new HashMap();
+                message.put("project", build.getProject().getName());
+                message.put("build", build.getNumber());
 
-            FedmsgMessage blob = new FedmsgMessage()
-                .setTopic("org.fedoraproject." + environment + ".jenkins.build." + status)
-                .setI(1)
-                .setTimestamp(new java.util.Date())
-                .setMessage(message);
-
-            try {
-                LOGGER.log(Level.SEVERE, "MSG: " + blob.toJson().toString());
-            } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "Error converting (unsigned) message to JSON.");
-            }
-
-            try {
-                if (getDescriptor().getShouldSign()) {
-                    SignedFedmsgMessage signed = blob.sign(
-                        new File(cert),
-                        new File(key));
-                    fedmsg.send(signed);
+                String status = "";
+                if (r.toString().equals("SUCCESS")) {
+                    status = "passed";
+                } else if (r.toString().equals("FAILURE")) {
+                    status = "failed";
                 } else {
-                    fedmsg.send(blob);
+                    status = "unknown";
                 }
-            } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "Unable to send to fedmsg.", e);
-                return false;
+
+                FedmsgMessage blob = new FedmsgMessage()
+                    .setTopic("org.fedoraproject." + environment + ".jenkins.build." + status)
+                    .setI(1)
+                    .setTimestamp(new java.util.Date())
+                    .setMessage(message);
+
+                try {
+                    LOGGER.log(Level.SEVERE, "MSG: " + blob.toJson().toString());
+                } catch (Exception e) {
+                    LOGGER.log(Level.SEVERE, "Error converting (unsigned) message to JSON.");
+                    return Either.left(e);
+                }
+
+                try {
+                    if (getDescriptor().getShouldSign()) {
+                        SignedFedmsgMessage signed = blob.sign(
+                            new File(cert),
+                            new File(key));
+                        fedmsg.send(signed);
+                    } else {
+                        fedmsg.send(blob);
+                    }
+                    return Either.right(r);
+                } catch (Exception e) {
+                    LOGGER.log(Level.SEVERE, "Unable to send to fedmsg.", e);
+                    return Either.left(e);
+                }
             }
-        }
-        return true;
+        });
+
+        return res.isRight();
     }
 
     @Override
@@ -128,7 +139,7 @@ public class FedmsgEmitter extends Notifier {
             load();
         }
 
-        public boolean isApplicable(Class<? extends AbstractProject> aClass) {
+        public boolean isApplicable(java.lang.Class<? extends AbstractProject> aClass) {
             return true;
         }
 

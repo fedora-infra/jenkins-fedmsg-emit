@@ -58,49 +58,50 @@ public class FedmsgEmitter extends Notifier {
         Either<Exception, Result> buildResult = Option.fromNull(build.getResult()).toEither(new Exception("left"));
 
         // /!\ ooooooh scary! monadic bind! /!\  :-)
-        Either<Exception, Result> res = buildResult.right().bind(new F<Result, Either<Exception, Result>>() {
-            public Either<Exception, Result> f(final Result r) {
-                HashMap<String, Object> message = new HashMap();
-                message.put("project", build.getProject().getName());
-                message.put("build", build.getNumber());
+        Either<Exception, Result> res =
+            buildResult.right().bind(new F<Result, Either<Exception, Result>>() {
+                public Either<Exception, Result> f(final Result r) {
+                    HashMap<String, Object> message = new HashMap();
+                    message.put("project", build.getProject().getName());
+                    message.put("build", build.getNumber());
 
-                String status = "";
-                if (r.toString().equals("SUCCESS")) {
-                    status = "passed";
-                } else if (r.toString().equals("FAILURE")) {
-                    status = "failed";
-                } else {
-                    status = "unknown";
-                }
-
-                FedmsgMessage blob = new FedmsgMessage()
-                    .setTopic("org.fedoraproject." + environment + ".jenkins.build." + status)
-                    .setI(1)
-                    .setTimestamp(new java.util.Date())
-                    .setMessage(message);
-
-                try {
-                    LOGGER.log(Level.SEVERE, "MSG: " + blob.toJson().toString());
-                } catch (Exception e) {
-                    LOGGER.log(Level.SEVERE, "Error converting (unsigned) message to JSON.");
-                    return Either.left(e);
-                }
-
-                try {
-                    if (getDescriptor().getShouldSign()) {
-                        SignedFedmsgMessage signed = blob.sign(
-                            new File(cert),
-                            new File(key));
-                        fedmsg.send(signed);
+                    String status = "";
+                    if (r.toString().equals("SUCCESS")) {
+                        status = "passed";
+                    } else if (r.toString().equals("FAILURE")) {
+                        status = "failed";
                     } else {
-                        fedmsg.send(blob);
+                        status = "unknown";
                     }
-                    return Either.right(r);
-                } catch (Exception e) {
-                    LOGGER.log(Level.SEVERE, "Unable to send to fedmsg.", e);
-                    return Either.left(e);
+
+                    FedmsgMessage blob = new FedmsgMessage()
+                        .setTopic("org.fedoraproject." + environment + ".jenkins.build." + status)
+                        .setI(1)
+                        .setTimestamp(new java.util.Date())
+                        .setMessage(message);
+
+                    try {
+                        LOGGER.log(Level.SEVERE, "MSG: " + blob.toJson().toString());
+                    } catch (Exception e) {
+                        LOGGER.log(Level.SEVERE, "Error converting (unsigned) message to JSON.");
+                        return Either.left(e);
+                    }
+
+                    try {
+                        if (getDescriptor().getShouldSign()) {
+                            SignedFedmsgMessage signed = blob.sign(
+                                new File(cert),
+                                new File(key));
+                            fedmsg.send(signed);
+                        } else {
+                            fedmsg.send(blob);
+                        }
+                        return Either.right(r);
+                    } catch (Exception e) {
+                        LOGGER.log(Level.SEVERE, "Unable to send to fedmsg.", e);
+                        return Either.left(e);
+                    }
                 }
-            }
         });
 
         return res.isRight();
@@ -204,4 +205,3 @@ public class FedmsgEmitter extends Notifier {
         }
     }
 }
-

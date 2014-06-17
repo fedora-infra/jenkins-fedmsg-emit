@@ -20,7 +20,7 @@ import java.util.logging.Logger;
 
 import org.fedoraproject.fedmsg.*;
 
-import fj.*;
+import fj.F;
 import fj.data.Either;
 import fj.data.Option;
 
@@ -140,7 +140,7 @@ public class FedmsgEmitter extends Notifier {
             load();
         }
 
-        public boolean isApplicable(java.lang.Class<? extends AbstractProject> aClass) {
+        public boolean isApplicable(Class<? extends AbstractProject> aClass) {
             return true;
         }
 

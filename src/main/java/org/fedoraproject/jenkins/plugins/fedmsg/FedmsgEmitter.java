@@ -36,16 +36,16 @@ public class FedmsgEmitter extends Notifier {
 
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
-        String endpoint = getDescriptor().getEndpoint();
+        String endpoint    = getDescriptor().getEndpoint();
         String environment = getDescriptor().getEnvironmentShortname();
-        String cert = getDescriptor().getCertificateFile();
-        String key  = getDescriptor().getKeystoreFile();
-        
+        String cert        = getDescriptor().getCertificateFile();
+        String key         = getDescriptor().getKeystoreFile();
+
         LOGGER.log(Level.SEVERE, "Endpoint: " + endpoint);
         LOGGER.log(Level.SEVERE, "Env: " + environment);
         LOGGER.log(Level.SEVERE, "Certificate: " + cert);
         LOGGER.log(Level.SEVERE, "Keystore: " + key);
-        
+
         FedmsgConnection fedmsg = new FedmsgConnection()
             .setEndpoint(endpoint)
             .setLinger(2000)
@@ -119,6 +119,7 @@ public class FedmsgEmitter extends Notifier {
         private String  environmentShortname;
         private String  certificateFile;
         private String  keystoreFile;
+
         /**
          * In order to load the persisted global configuration, you have to
          * call load() in the constructor.
@@ -175,13 +176,6 @@ public class FedmsgEmitter extends Notifier {
          */
         public String getCertificateFile() {
             return certificateFile;
-        }
-
-        /**
-         * @param certificateFile the certificateFile to set
-         */
-        public void setCertificateFile(String certificateFile) {
-            this.certificateFile = certificateFile;
         }
 
         /**

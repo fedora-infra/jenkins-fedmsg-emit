@@ -33,11 +33,18 @@ import fj.data.Option;
  */
 public class FedmsgEmitter extends Notifier {
 
-
-  private static final Logger LOGGER = Logger.getLogger("FedmsgEmitter");
+    private static final Logger LOGGER = Logger.getLogger("FedmsgEmitter");
 
     @DataBoundConstructor
     public FedmsgEmitter() { }
+
+    private Option<String> statusToFedmsg(String s) {
+        if (s.equals("SUCCESS"))
+            return Option.some("passed");
+        else if (s.equals("FAILURE"))
+            return Option.some("failed");
+        return Option.none();
+    }
 
     @Override
     public boolean perform(final AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
@@ -66,14 +73,7 @@ public class FedmsgEmitter extends Notifier {
                     message.put("project", build.getProject().getName());
                     message.put("build", build.getNumber());
 
-                    String status = "";
-                    if (r.toString().equals("SUCCESS")) {
-                        status = "passed";
-                    } else if (r.toString().equals("FAILURE")) {
-                        status = "failed";
-                    } else {
-                        status = "unknown";
-                    }
+                    String status = statusToFedmsg(r.toString()).orSome("unknown");
 
                     FedmsgMessage blob = new FedmsgMessage(
                          message,

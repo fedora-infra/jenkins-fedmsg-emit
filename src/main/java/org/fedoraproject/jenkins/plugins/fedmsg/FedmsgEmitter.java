@@ -22,6 +22,7 @@ import org.fedoraproject.fedmsg.*;
 
 import fj.F;
 import fj.data.Either;
+import fj.data.IO;
 import fj.data.Option;
 
 
@@ -74,11 +75,11 @@ public class FedmsgEmitter extends Notifier {
                         status = "unknown";
                     }
 
-                    FedmsgMessage blob = new FedmsgMessage()
-                        .setTopic("org.fedoraproject." + environment + ".jenkins.build." + status)
-                        .setI(1)
-                        .setTimestamp(new java.util.Date())
-                        .setMessage(message);
+                    FedmsgMessage blob = new FedmsgMessage(
+                         message,
+                         "org.fedoraproject." + environment + ".jenkins.build." + status,
+                         (new java.util.Date()).getTime() / 1000,
+                         1);
 
                     try {
                         LOGGER.log(Level.SEVERE, "MSG: " + blob.toJson().toString());
@@ -89,10 +90,26 @@ public class FedmsgEmitter extends Notifier {
 
                     try {
                         if (getDescriptor().getShouldSign()) {
-                            SignedFedmsgMessage signed = blob.sign(
-                                new File(cert),
-                                new File(key));
-                            fedmsg.send(signed);
+                            final IO<Either<Exception, SignedFedmsgMessage>> signedIO =
+                                blob.sign(
+                                    new File(cert),
+                                    new File(key));
+                            signedIO.map(
+                                new F<Either<Exception, SignedFedmsgMessage>, Either<Exception, SignedFedmsgMessage>>() {
+                                    public Either<Exception, SignedFedmsgMessage> f(final Either<Exception, SignedFedmsgMessage> em) {
+                                        return em.right().bind(
+                                            new F<SignedFedmsgMessage, Either<Exception, SignedFedmsgMessage>>() {
+                                                public Either<Exception, SignedFedmsgMessage> f(final SignedFedmsgMessage m) {
+                                                    try {
+                                                        fedmsg.send(m);
+                                                        return Either.right(m);
+                                                    } catch (Exception e) {
+                                                        return Either.left(e);
+                                                    }
+                                                }
+                                            });
+                                    }
+                                });
                         } else {
                             fedmsg.send(blob);
                         }

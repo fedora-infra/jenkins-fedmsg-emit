@@ -53,11 +53,6 @@ public class FedmsgEmitter extends Notifier {
         final String cert        = getDescriptor().getCertificateFile();
         final String key         = getDescriptor().getKeystoreFile();
 
-        LOGGER.log(Level.SEVERE, "Endpoint: " + endpoint);
-        LOGGER.log(Level.SEVERE, "Env: " + environment);
-        LOGGER.log(Level.SEVERE, "Certificate: " + cert);
-        LOGGER.log(Level.SEVERE, "Keystore: " + key);
-
         final FedmsgConnection fedmsg = new FedmsgConnection()
             .setEndpoint(endpoint)
             .setLinger(2000)

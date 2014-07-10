@@ -53,10 +53,7 @@ public class FedmsgEmitter extends Notifier {
         final String cert        = getDescriptor().getCertificateFile();
         final String key         = getDescriptor().getKeystoreFile();
 
-        final FedmsgConnection fedmsg = new FedmsgConnection()
-            .setEndpoint(endpoint)
-            .setLinger(2000)
-            .connect();
+        final FedmsgConnection fedmsg = new FedmsgConnection(endpoint, 2000).connect();
 
         Either<Exception, Result> buildResult = Option.fromNull(build.getResult()).toEither(new Exception("left"));
 

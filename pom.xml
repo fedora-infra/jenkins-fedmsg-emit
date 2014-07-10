@@ -8,7 +8,7 @@
 
   <groupId>org.fedoraproject.jenkins.plugins</groupId>
   <artifactId>fedmsg</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
   <packaging>hpi</packaging>
 
   <repositories>

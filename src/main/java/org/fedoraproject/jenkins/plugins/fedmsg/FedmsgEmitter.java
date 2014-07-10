@@ -21,20 +21,9 @@ import java.util.logging.Logger;
 import org.fedoraproject.fedmsg.*;
 
 import fj.F;
-import fj.Unit;
 import fj.data.Either;
 import fj.data.IO;
 import fj.data.Option;
-
-abstract class BuildStatus {
-    private BuildStatus() {}
-    final static class Success extends BuildStatus {
-        public Success() {}
-    }
-    final static class Failure extends BuildStatus {
-        public Failure() {}
-    }
-}
 
 
 /**
@@ -64,23 +53,24 @@ public class FedmsgEmitter extends Notifier {
         final String cert        = getDescriptor().getCertificateFile();
         final String key         = getDescriptor().getKeystoreFile();
 
-        final IO<FedmsgConnection> fedmsg =
-            new FedmsgConnection(endpoint, 2000).connect();
+        final FedmsgConnection fedmsg = new FedmsgConnection()
+            .setEndpoint(endpoint)
+            .setLinger(2000)
+            .connect();
 
-        Either<Exception, Result> buildResult =
-            Option.fromNull(build.getResult()).toEither(new Exception("left"));
+        Either<Exception, Result> buildResult = Option.fromNull(build.getResult()).toEither(new Exception("left"));
 
         // /!\ ooooooh scary! monadic bind! /!\  :-)
-        Either<Exception, Unit> res =
-            buildResult.right().bind(new F<Result, Either<Exception, Unit>>() {
-                public Either<Exception, Unit> f(final Result r) {
+        Either<Exception, Result> res =
+            buildResult.right().bind(new F<Result, Either<Exception, Result>>() {
+                public Either<Exception, Result> f(final Result r) {
                     HashMap<String, Object> message = new HashMap();
                     message.put("project", build.getProject().getName());
                     message.put("build", build.getNumber());
 
-                    final String status = statusToFedmsg(r.toString()).orSome("unknown");
+                    String status = statusToFedmsg(r.toString()).orSome("unknown");
 
-                    final FedmsgMessage blob = new FedmsgMessage(
+                    FedmsgMessage blob = new FedmsgMessage(
                          message,
                          "org.fedoraproject." + environment + ".jenkins.build." + status,
                          (new java.util.Date()).getTime() / 1000,
@@ -100,18 +90,14 @@ public class FedmsgEmitter extends Notifier {
                                     new File(cert),
                                     new File(key));
                             signedIO.map(
-                                new F<Either<Exception, SignedFedmsgMessage>, Either<Exception, Unit>>() {
-                                    public Either<Exception, Unit> f(final Either<Exception, SignedFedmsgMessage> em) {
+                                new F<Either<Exception, SignedFedmsgMessage>, Either<Exception, SignedFedmsgMessage>>() {
+                                    public Either<Exception, SignedFedmsgMessage> f(final Either<Exception, SignedFedmsgMessage> em) {
                                         return em.right().bind(
-                                            new F<SignedFedmsgMessage, Either<Exception, Unit>>() {
-                                                public Either<Exception, Unit> f(final SignedFedmsgMessage m) {
+                                            new F<SignedFedmsgMessage, Either<Exception, SignedFedmsgMessage>>() {
+                                                public Either<Exception, SignedFedmsgMessage> f(final SignedFedmsgMessage m) {
                                                     try {
-                                                        return fedmsg.bind(
-                                                            new F<FedmsgConnection, IO<Either<Exception, Unit>>>() {
-                                                                public IO<Either<Exception, Unit>> f(FedmsgConnection c) {
-                                                                    return c.send(m);
-                                                                }
-                                                            }).run(); // unsafe!
+                                                        fedmsg.send(m);
+                                                        return Either.right(m);
                                                     } catch (Exception e) {
                                                         return Either.left(e);
                                                     }
@@ -119,15 +105,10 @@ public class FedmsgEmitter extends Notifier {
                                             });
                                     }
                                 });
-                            return Either.right(Unit.unit());
                         } else {
-                            return fedmsg.bind(
-                                new F<FedmsgConnection, IO<Either<Exception, Unit>>>() {
-                                    public IO<Either<Exception, Unit>> f(FedmsgConnection c) {
-                                        return c.send(blob);
-                                    }
-                                }).run(); // unsafe!
+                            fedmsg.send(blob);
                         }
+                        return Either.right(r);
                     } catch (Exception e) {
                         LOGGER.log(Level.SEVERE, "Unable to send to fedmsg.", e);
                         return Either.left(e);

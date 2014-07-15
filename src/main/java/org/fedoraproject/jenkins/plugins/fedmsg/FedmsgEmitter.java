@@ -21,6 +21,7 @@ import java.util.logging.Logger;
 import org.fedoraproject.fedmsg.*;
 
 import fj.F;
+import fj.Unit;
 import fj.data.Either;
 import fj.data.IO;
 import fj.data.Option;
@@ -87,22 +88,38 @@ public class FedmsgEmitter extends Notifier {
                                     new File(cert),
                                     new File(key));
                             signedIO.map(
-                                new F<Either<Exception, SignedFedmsgMessage>, Either<Exception, SignedFedmsgMessage>>() {
-                                    public Either<Exception, SignedFedmsgMessage> f(final Either<Exception, SignedFedmsgMessage> em) {
-                                        return em.right().bind(
-                                            new F<SignedFedmsgMessage, Either<Exception, SignedFedmsgMessage>>() {
-                                                public Either<Exception, SignedFedmsgMessage> f(final SignedFedmsgMessage m) {
-                                                    try {
-                                                        fedmsg.send(m);
-                                                        return Either.right(m);
-                                                    } catch (Exception e) {
-                                                        return Either.left(e);
-                                                    }
+                                new F<Either<Exception, SignedFedmsgMessage>, IO<Unit>>() {
+                                    public IO<Unit> f(final Either<Exception, SignedFedmsgMessage> em) {
+                                        return em.either(
+                                            new F<Exception, IO<Unit>>() {
+                                                public IO<Unit> f(final Exception e) {
+                                                    return new IO<Unit>() {
+                                                        public Unit run() {
+                                                            LOGGER.log(Level.SEVERE, "ERROR SIGNING: ", e);
+                                                            return Unit.unit();
+                                                        }
+                                                    };
+                                                }
+                                            },
+                                            new F<SignedFedmsgMessage, IO<Unit>>() {
+                                                public IO<Unit> f(final SignedFedmsgMessage m) {
+                                                    return new IO<Unit>() {
+                                                        public Unit run() {
+                                                            try {
+                                                                fedmsg.send(m);
+                                                                LOGGER.log(Level.SEVERE, "SENT: " + m.toJson().toString());
+                                                            } catch (java.io.IOException e) {
+                                                                LOGGER.log(Level.SEVERE, "ERROR: " + e.toString());
+                                                            }
+                                                            return Unit.unit();
+                                                        }
+                                                    };
                                                 }
                                             });
                                     }
-                                });
+                                }).run().run();
                         } else {
+                            LOGGER.log(Level.SEVERE, "SENT: " + blob.toJson().toString());
                             fedmsg.send(blob);
                         }
                         return Either.right(r);

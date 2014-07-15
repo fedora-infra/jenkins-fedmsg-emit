@@ -8,7 +8,7 @@
 
   <groupId>org.fedoraproject.jenkins.plugins</groupId>
   <artifactId>fedmsg</artifactId>
-  <version>1.0</version>
+  <version>1.2</version>
   <packaging>hpi</packaging>
 
   <repositories>
@@ -34,7 +34,7 @@
     <dependency>
       <groupId>org.fedoraproject</groupId>
       <artifactId>fedmsg</artifactId>
-      <version>4.0.0</version>
+      <version>4.2.0</version>
       <type>jar</type>
       <optional>false</optional>
     </dependency>
@@ -42,7 +42,7 @@
     <dependency>
       <groupId>org.functionaljava</groupId>
       <artifactId>functionaljava</artifactId>
-      <version>4.1</version>
+      <version>3.1</version>
     </dependency>
   </dependencies>
 </project>

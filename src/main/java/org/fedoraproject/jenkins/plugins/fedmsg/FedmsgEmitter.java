@@ -40,10 +40,18 @@ public class FedmsgEmitter extends Notifier {
     public FedmsgEmitter() { }
 
     private Option<String> statusToFedmsg(String s) {
+        // http://javadoc.jenkins-ci.org/hudson/model/Result.html
+        // Wouldn't it be great if Java had pattern matching?
         if (s.equals("SUCCESS"))
             return Option.some("passed");
         else if (s.equals("FAILURE"))
             return Option.some("failed");
+        else if (s.equals("ABORTED"))
+            return Option.some("aborted");
+        else if (s.equals("NOT_BUILT"))
+            return Option.some("notbuilt");
+        else if (s.equals("UNSTABLE"))
+            return Option.some("unstable");
         return Option.none();
     }
 

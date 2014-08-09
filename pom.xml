@@ -8,8 +8,31 @@
 
   <groupId>org.fedoraproject.jenkins.plugins</groupId>
   <artifactId>fedmsg</artifactId>
-  <version>1.4</version>
+  <version>1.5.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
+
+  <scm>
+    <connection>scm:git:git://github.com/fedora-infra/jenkins-fedmsg-emit.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/fedora-infra/jenkins-fedmsg-emit.git</developerConnection>
+    <url>https://github.com/fedora-infra/jenkins-fedmsg-emit</url>
+  </scm>
+
+  <url>http://wiki.jenkins-ci.org/display/JENKINS/jenkins-fedmsg-emit</url>
+
+  <developers>
+    <developer>
+      <id>relrod</id>
+      <name>Ricky Elrod</name>
+      <email>ricky@elrod.me</email>
+    </developer>
+  </developers>
+
+  <distributionManagement>
+    <repository>
+      <id>maven.jenkins-ci.org</id>
+      <url>http://maven.jenkins-ci.org:8081/content/repositories/releases/</url>
+    </repository>
+  </distributionManagement>
 
   <repositories>
     <repository>

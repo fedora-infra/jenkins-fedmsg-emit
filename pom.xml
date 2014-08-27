@@ -42,7 +42,7 @@
 
     <repository>
       <id>codeblock.fedorapeople.org</id>
-      <url>http://codeblock.fedorapeople.org/maven/</url>
+      <url>https://codeblock.fedorapeople.org/maven/</url>
     </repository>
   </repositories>
 

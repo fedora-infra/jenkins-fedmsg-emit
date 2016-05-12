@@ -26,7 +26,6 @@ import fj.data.Either;
 import fj.data.IO;
 import fj.data.Option;
 
-
 /**
  * Send a message to the Fedmsg bus when a build is completed.
  *
@@ -71,8 +70,15 @@ public class FedmsgEmitter extends Notifier {
             buildResult.right().bind(new F<Result, Either<Exception, Result>>() {
                 public Either<Exception, Result> f(final Result r) {
                     HashMap<String, Object> message = new HashMap();
-                    message.put("project", build.getProject().getName());
+                    // .split(...) always returns a nonempty list, even for
+                    // empty strings, so we are justified in our 0-index below.
+                    // Well, not justified, but we're using Java so we're
+                    // already screwed.
+                    String[] projectName = build.getProject().getFullDisplayName().split(" \u00bb ");
+                    message.put("project", projectName[0]);
                     message.put("build", build.getNumber());
+                    if (projectName.length > 1)
+                        message.put("configuration", projectName[1]);
 
                     String status = statusToFedmsg(r.toString()).orSome("unknown");
 

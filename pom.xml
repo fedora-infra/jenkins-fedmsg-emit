@@ -8,7 +8,7 @@
 
   <groupId>org.fedoraproject.jenkins.plugins</groupId>
   <artifactId>fedmsg</artifactId>
-  <version>1.5.1-SNAPSHOT</version>
+  <version>1.5.3-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <scm>
@@ -68,4 +68,17 @@
       <version>3.1</version>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.jenkins-ci.tools</groupId>
+        <artifactId>maven-hpi-plugin</artifactId>
+        <configuration>
+          <pluginFirstClassLoader>true</pluginFirstClassLoader>
+          <maskClasses>org.bouncycastle.</maskClasses>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

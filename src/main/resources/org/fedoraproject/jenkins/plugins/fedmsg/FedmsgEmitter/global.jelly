@@ -22,7 +22,7 @@
     </f:entry>
 
     <f:entry title="Environment Shortname" field="environmentShortname"
-      description="Check if we should sign messages before sending them">
+      description="Shortname to be used for specifiying the Environment">
 	    <f:textbox value="${descriptor.environmentShortname}" />
     </f:entry>
 

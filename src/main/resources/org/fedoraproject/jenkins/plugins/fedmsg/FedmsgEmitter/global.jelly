@@ -25,7 +25,10 @@
       description="Shortname to be used for specifiying the Environment">
 	    <f:textbox value="${descriptor.environmentShortname}" />
     </f:entry>
-
+    <f:entry title="Topic Prefix" field="topicPrefix"
+      description="The topic prefix is the toplevel namespace of the message">
+                        <f:textbox value="${descriptor.topicPrefix}" default="${descriptor.defaultTopicPrefix()}"/>
+   </f:entry>
     <f:entry title="Certificate File" field="certificateFile"
       description="Certificate used Fedmsg Emitter">
 	    <f:textbox value="${descriptor.certificateFile}" />

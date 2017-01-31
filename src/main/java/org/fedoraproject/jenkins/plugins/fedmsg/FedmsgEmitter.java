@@ -57,6 +57,7 @@ public class FedmsgEmitter extends Notifier {
     @Override
     public boolean perform(final AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
         final String endpoint    = getDescriptor().getEndpoint();
+        final String topicPrefix = getDescriptor().getTopicPrefix();
         final String environment = getDescriptor().getEnvironmentShortname();
         final String cert        = getDescriptor().getCertificateFile();
         final String key         = getDescriptor().getKeystoreFile();
@@ -84,7 +85,7 @@ public class FedmsgEmitter extends Notifier {
 
                     FedmsgMessage blob = new FedmsgMessage(
                          message,
-                         "org.fedoraproject." + environment + ".jenkins.build." + status,
+                         topicPrefix +"." + environment + ".jenkins.build." + status,
                          (new java.util.Date()).getTime() / 1000,
                          1);
 
@@ -168,6 +169,7 @@ public class FedmsgEmitter extends Notifier {
          */
         private boolean shouldSign;
         private String  endpoint;
+        private String  topicPrefix;
         private String  environmentShortname;
         private String  certificateFile;
         private String  keystoreFile;
@@ -195,6 +197,7 @@ public class FedmsgEmitter extends Notifier {
         public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
             shouldSign = formData.getBoolean("shouldSign");
             endpoint   = formData.getString("endpoint");
+            topicPrefix = formData.getString("topicPrefix");
             environmentShortname = formData.getString("environmentShortname");
             keystoreFile = formData.getString("keystoreFile") ;
             certificateFile = formData.getString("certificateFile");
@@ -214,6 +217,20 @@ public class FedmsgEmitter extends Notifier {
          */
         public String getEndpoint() {
             return endpoint;
+        }
+        
+        /**
+         * This method returns the topic prefix (toplevel namespace for the message)
+         */
+        public String getTopicPrefix(){
+            return topicPrefix;
+        }
+        
+        /**
+         * This method returns the default topic prefix if one is not previously defined
+         */
+        public String defaultTopicPrefix(){
+            return "org.fedoraproject";
         }
 
         /**

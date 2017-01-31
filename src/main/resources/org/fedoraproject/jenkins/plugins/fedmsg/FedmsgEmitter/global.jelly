@@ -27,7 +27,7 @@
     </f:entry>
     <f:entry title="Topic Prefix" field="topicPrefix"
       description="The topic prefix is the toplevel namespace of the message">
-                        <f:textbox value="${descriptor.topicPrefix}" default="${descriptor.defaultTopicPrefix()}"/>
+	    <f:textbox value="${descriptor.topicPrefix}" default="${descriptor.defaultTopicPrefix()}"/>
    </f:entry>
     <f:entry title="Certificate File" field="certificateFile"
       description="Certificate used Fedmsg Emitter">
